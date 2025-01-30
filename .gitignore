@@ -2,5 +2,5 @@ __pycache__/
 logs/
 profiles.yml
 airflow.cfg
-IAM.txt
+credentials
 .user.yml
