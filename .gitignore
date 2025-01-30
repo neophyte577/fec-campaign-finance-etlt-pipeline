@@ -1,0 +1,6 @@
+__pycache__/
+logs/
+profiles.yml
+airflow.cfg
+IAM.txt
+.user.yml
