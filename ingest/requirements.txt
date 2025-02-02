@@ -1,3 +1,4 @@
 pandas
 polars
 pendulum
+apache-airflow-providers-snowflake
