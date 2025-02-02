@@ -4,3 +4,4 @@ profiles.yml
 airflow.cfg
 credentials
 .user.yml
+snowflake_connection.py
