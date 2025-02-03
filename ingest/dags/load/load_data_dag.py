@@ -2,12 +2,23 @@ from airflow.decorators import dag, task
 from airflow.operators.empty import EmptyOperator
 from airflow.models.param import Param
 from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
+from airflow.sensors.external_task_sensor import ExternalTaskSensor
+
 from pendulum import today, duration, datetime
+import shutil
 import pandas as pd
 
-file_path = '/opt/airflow/dags/exploratory/2025-01-01_committee_contributions_2024.csv'
+name = 'committee_contributions'
+cycle = '2024'
+suffix = cycle[len(cycle)-2:]
+fec_code = 'pas2'
+run_date = 'today'
+extension = '.csv'
+output_name = f'{run_date}_{name}_{cycle}{extension}'
 
-df = pd.read_csv(file_path)
+file_path = f'/opt/airflow/dags/temp/{name}_{cycle}/out/{output_name}'
+
+df = pd.read_csv(file_path, low_memory=False)
 
 table_name = 'committee_contributions_2024'
 
@@ -25,7 +36,7 @@ def get_snowflake_data_type(pandas_dtype):
   elif pandas_dtype == 'float64':
       return 'FLOAT'
   elif pandas_dtype == 'object': 
-      return 'VARCHAR(69)'  
+      return 'VARCHAR(420)'  
   else:
       return 'VARCHAR(420)' 
 
@@ -40,13 +51,16 @@ default_args = {
 }
 
 @dag(
+    dag_id='load_data',
+    schedule_interval=None,
     start_date=datetime(2025,1,1), 
-    schedule='@daily', 
+    schedule=None,
     catchup=False,
     default_args=default_args, 
+    is_paused_upon_creation=False,
     # params={"run_date": Param(today().to_date_string(), type="string")}
 )
-def load_committee_contributions():
+def load_data():
 
     @task
     def start():
@@ -81,9 +95,7 @@ def load_committee_contributions():
     @task
     def load():
 
-        run_date = today().to_date_string()
-
-        load_committee_contributions = f"""
+        load_data = f"""
         COPY INTO fec_db.raw.committee_contributions_2024
             FROM @FEC_DB.RAW.S3_STAGE/campaign-finance/2025-01-01_committee_contributions_2024.csv
             ON_ERROR = 'CONTINUE'
@@ -93,7 +105,7 @@ def load_committee_contributions():
         
         load_query = SnowflakeOperator(
             task_id="snowflake_query",
-            sql=load_committee_contributions,
+            sql=load_data,
             snowflake_conn_id="snowflake_conn"
         )
 
@@ -104,9 +116,14 @@ def load_committee_contributions():
             raise 
     
     @task
+    def clean_up():
+        # shutil.rmtree(f'/opt/airflow/dags/temp/{name}_{cycle}')
+        pass
+
+    @task
     def stop():
         EmptyOperator(task_id="stop")
 
-    start() >> truncate() >> create() >> load() >> stop()
+    start() >> truncate() >> create() >> load() >> clean_up() >> stop()
 
-load_committee_contributions()
+load_data()
