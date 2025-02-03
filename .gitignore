@@ -1,5 +1,6 @@
 __pycache__/
 logs/
+exploratory/
 profiles.yml
 airflow.cfg
 credentials
