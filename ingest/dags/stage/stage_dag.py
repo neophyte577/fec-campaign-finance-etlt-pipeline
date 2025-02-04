@@ -4,13 +4,6 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
-name = 'committee_contributions'
-cycle = '2024'
-suffix = cycle[len(cycle)-2:]
-fec_code = 'pas2'
-run_date = 'today'
-extension = '.csv'
-output_name = f'{run_date}_{name}_{cycle}{extension}'
 s3_dir = 'campaign-finance'
 
 @dag(
@@ -22,6 +15,30 @@ s3_dir = 'campaign-finance'
     is_paused_upon_creation=False
 )
 def stage():
+
+    @task
+    def process_config(**context):
+        dag_run = context['dag_run'].conf
+        config = {'name': dag_run.get('dataset_name'), 'fec_code': dag_run.get('fec_code')}
+        return config
+
+    @task
+    def initialize_paths(config):
+        name = config['name']
+        fec_code = config['fec_code']
+
+        run_date = "today"
+        extension = ".csv"
+        cycle = "2024"
+    
+        output_name = f'{run_date}_{name}_{cycle}{extension}'
+
+        return {
+            'name': name,
+            'fec_code': fec_code,
+            'cycle': cycle,
+            'output_name': output_name
+        }
 
     @task
     def start():
@@ -39,7 +56,12 @@ def stage():
             raise
 
     @task
-    def upload():
+    def upload(paths):
+
+        name = paths['name']
+        cycle = paths['cycle']
+        output_name = paths['output_name']
+
         try:
             s3_hook = S3Hook()
             buckets = s3_hook.get_conn().list_buckets()['Buckets']
@@ -58,12 +80,15 @@ def stage():
             print(f"Error uploading file to S3: {e}")
             raise
 
-    trigger_loading = TriggerDagRunOperator(task_id='trigger_loading', trigger_dag_id='load_data', wait_for_completion=False)
+    #trigger_loading = TriggerDagRunOperator(task_id='trigger_loading', trigger_dag_id='load_data', wait_for_completion=False)
 
     @task
     def stop():
         EmptyOperator(task_id="stop")
     
-    start() >> test_s3_connection() >> upload() >> trigger_loading >> stop()
+    config = process_config()
+    paths = initialize_paths(config)
+    
+    start() >> test_s3_connection() >> upload(paths) >> stop()
 
 stage()
