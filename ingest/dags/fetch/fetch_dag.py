@@ -8,6 +8,7 @@ import os
 import shutil 
 import zipfile
 import polars as pl
+import pandas as pd
 
 default_args = {
     "owner": "admin",
@@ -27,22 +28,25 @@ default_args = {
 )
 def ingest():
 
+    keys = ['name', 'fec_code', 'cycle', 'run_date', 'extension', 'temp_dir']
+
     @task
     def process_config(**context):
         dag_run = context['dag_run'].conf
-        config = {'name': dag_run.get('dataset_name'), 'fec_code': dag_run.get('fec_code')}
+        config = {'name': dag_run.get('name'), 'fec_code': dag_run.get('fec_code'), 'cycle': dag_run.get('cycle'), 
+                  'run_date': dag_run.get('run_date'), 'extension': dag_run.get('extension'), 'temp_dir': dag_run.get('temp_dir')}
         return config
 
     @task
     def initialize_paths(config):
         name = config['name']
         fec_code = config['fec_code']
-        
-        run_date = "today"
-        extension = ".csv"
-        cycle = "2024"
+        cycle = config['cycle']
+        run_date = config['run_date']
+        extension = config['extension']
+        temp_dir = config['temp_dir']
+
         suffix = cycle[-2:]
-        temp_dir = '/opt/airflow/dags/temp/'
         
         input_dir = f'{temp_dir}{name}_{cycle}/in/'
         output_dir = f'{temp_dir}{name}_{cycle}/out/'
@@ -52,7 +56,7 @@ def ingest():
         cleaned_data_path = data_dir + 'cleaned_data.txt'
         output_name = f'{run_date}_{name}_{cycle}{extension}'
 
-        return {
+        paths = {
             'input_dir': input_dir,
             'output_dir': output_dir,
             'header_path': header_path,
@@ -64,6 +68,8 @@ def ingest():
             'suffix': suffix,
             'name': name
         }
+
+        return paths
 
     @task
     def start():
@@ -129,23 +135,24 @@ def ingest():
         output_name = paths['output_name']
         output_dir = paths['output_dir']
 
-        column_names = pl.read_csv(header_path, has_header=False).row(0)
+        header = pl.read_csv(header_path, has_header=False).row(0)
 
-        dtype = {name : pl.Utf8 for name in column_names}
+        dtype = {name : pl.Utf8 for name in header}
 
-        df = pl.read_csv(cleaned_data_path, separator='|', new_columns=column_names, 
+        df = pl.read_csv(cleaned_data_path, separator='|', new_columns=header, 
                         schema_overrides=dtype, infer_schema_length=0, encoding="utf-8")
 
         df.write_csv(os.path.join(output_dir, output_name), line_terminator='\n')
 
-    def trigger_staging(config):
-        return TriggerDagRunOperator(
+    trigger_staging_task = TriggerDagRunOperator(
         task_id='trigger_staging',
         trigger_dag_id='stage', 
-        conf={
-            'dataset_name': '{{ ti.xcom_pull(task_ids="process_config")["name"] }}',
-            'fec_code': '{{ ti.xcom_pull(task_ids="process_config")["fec_code"] }}'
-        },
+        conf = {key: f'{{{{ ti.xcom_pull(task_ids="process_config")["{key}"] }}}}' for key in keys},
+        # conf={
+        #     'name': '{{ ti.xcom_pull(task_ids="process_config")["name"] }}',
+        #     'fec_code': '{{ ti.xcom_pull(task_ids="process_config")["fec_code"] }}'
+        #     'run_date' : '{{ ti.xcom_pull(task_ids="process_config")["run_date"] }}'
+        # },
         wait_for_completion=False  
     )
 
@@ -155,7 +162,6 @@ def ingest():
 
     config = process_config()
     paths = initialize_paths(config)
-    trigger_staging_task = trigger_staging(config)
 
     start() >> create_dirs(paths) >> get_header(paths) >> get_data(paths) >> preprocess(paths) >> write(paths) >> trigger_staging_task >> stop()
 

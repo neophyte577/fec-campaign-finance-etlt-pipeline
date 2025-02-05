@@ -16,29 +16,36 @@ s3_dir = 'campaign-finance'
 )
 def stage():
 
-    @task
+    keys = ['name', 'fec_code', 'cycle', 'run_date', 'extension', 'temp_dir']
+
+    @task(outlets=['config'])
     def process_config(**context):
         dag_run = context['dag_run'].conf
-        config = {'name': dag_run.get('dataset_name'), 'fec_code': dag_run.get('fec_code')}
+        config = {'name': dag_run.get('name'), 'fec_code': dag_run.get('fec_code'), 'cycle': dag_run.get('cycle'), 
+                  'run_date': dag_run.get('run_date'), 'extension': dag_run.get('extension'), 'temp_dir': dag_run.get('temp_dir')}  
         return config
 
-    @task
+    @task(outlets=['paths'])
     def initialize_paths(config):
         name = config['name']
         fec_code = config['fec_code']
+        cycle = config['cycle']
+        run_date = config['run_date']
+        extension = config['extension']
 
-        run_date = "today"
         extension = ".csv"
         cycle = "2024"
     
         output_name = f'{run_date}_{name}_{cycle}{extension}'
 
-        return {
+        paths = {
             'name': name,
             'fec_code': fec_code,
             'cycle': cycle,
             'output_name': output_name
         }
+
+        return paths
 
     @task
     def start():
@@ -80,15 +87,20 @@ def stage():
             print(f"Error uploading file to S3: {e}")
             raise
 
-    #trigger_loading = TriggerDagRunOperator(task_id='trigger_loading', trigger_dag_id='load_data', wait_for_completion=False)
+    trigger_loading_task = TriggerDagRunOperator(
+        task_id='trigger_loading',
+        trigger_dag_id='load_data', 
+        conf = {key: f'{{{{ ti.xcom_pull(task_ids="process_config")["{key}"] }}}}' for key in keys},
+        wait_for_completion=False  
+    )
 
     @task
     def stop():
         EmptyOperator(task_id="stop")
-    
+
     config = process_config()
     paths = initialize_paths(config)
-    
-    start() >> test_s3_connection() >> upload(paths) >> stop()
+
+    start() >> test_s3_connection() >> upload(paths) >> trigger_loading_task >> stop()
 
 stage()

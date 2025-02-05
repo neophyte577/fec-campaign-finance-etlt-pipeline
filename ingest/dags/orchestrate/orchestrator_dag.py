@@ -1,13 +1,20 @@
 from airflow.decorators import dag, task
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
-from airflow.models.param import Param
-from pendulum import datetime
+from pendulum import datetime, now
 
 datasets = {
     "committee_contributions": "pas2",
     "operating_expenditures": "oppexp",
 }
+
+cycles = ['2024']
+
+today = now().at(0, 0, 0) 
+today_date = today.date() 
+run_date = 'today'
+extension = '.csv'
+temp_dir = '/opt/airflow/dags/temp/'
 
 @dag(
     dag_id='orchestrate',
@@ -23,13 +30,15 @@ def orchestrate():
         EmptyOperator(task_id="start")
 
     triggers = []
-    for dataset_name, fec_code in datasets.items():
-        triggers.append(TriggerDagRunOperator(
-            task_id=f"trigger_{dataset_name}",
-            trigger_dag_id="fetch",
-            conf={"dataset_name": dataset_name, "fec_code": fec_code}, 
-            wait_for_completion=True
-        ))
+    for cycle in cycles:
+        for name, fec_code in datasets.items():
+            triggers.append(TriggerDagRunOperator(
+                task_id=f"trigger_{name}",
+                trigger_dag_id="fetch",
+                conf={'name': name, 'fec_code': fec_code,  'cycle': cycle, 'run_date': run_date, 
+                      'extension': extension, 'temp_dir': temp_dir}, 
+                wait_for_completion=True
+            ))
 
     @task
     def stop():
