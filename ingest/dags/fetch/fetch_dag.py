@@ -31,10 +31,9 @@ def ingest():
     keys = ['name', 'fec_code', 'cycle', 'run_date', 'extension', 'temp_dir']
 
     @task
-    def process_config(**context):
+    def process_config(**context): 
         dag_run = context['dag_run'].conf
-        config = {'name': dag_run.get('name'), 'fec_code': dag_run.get('fec_code'), 'cycle': dag_run.get('cycle'), 
-                  'run_date': dag_run.get('run_date'), 'extension': dag_run.get('extension'), 'temp_dir': dag_run.get('temp_dir')}
+        config = {key: dag_run.get(key) for key in keys}
         return config
 
     @task
@@ -50,8 +49,6 @@ def ingest():
         
         input_dir = f'{temp_dir}{name}_{cycle}/in/'
         output_dir = f'{temp_dir}{name}_{cycle}/out/'
-        header_dir = input_dir + 'header/'
-        header_path = header_dir + f'{name}_header.csv'
         data_dir = input_dir + 'data/'
         cleaned_data_path = data_dir + 'cleaned_data.txt'
         output_name = f'{run_date}_{name}_{cycle}{extension}'
@@ -59,7 +56,6 @@ def ingest():
         paths = {
             'input_dir': input_dir,
             'output_dir': output_dir,
-            'header_path': header_path,
             'data_dir': data_dir,
             'cleaned_data_path': cleaned_data_path,
             'output_name': output_name,
@@ -79,22 +75,12 @@ def ingest():
     def create_dirs(paths):
         input_dir = paths['input_dir']
         output_dir = paths['output_dir']
-        header_dir = os.path.dirname(paths['header_path'])
         data_dir = paths['data_dir']
 
-        for directory in [input_dir, output_dir, header_dir, data_dir]:
+        for directory in [input_dir, output_dir, data_dir]:
             if os.path.exists(directory):
                 shutil.rmtree(directory)
             os.makedirs(directory)
-                
-    @task
-    def get_header(paths):
-        header_path = paths['header_path']
-        fec_code = paths['fec_code']
-        header_url = f'https://www.fec.gov/files/bulk-downloads/data_dictionaries/{fec_code}_header_file.csv'
-        
-        with open(header_path, 'wb') as header:
-            header.write(requests.get(header_url).content)
 
     @task
     def get_data(paths):
@@ -123,24 +109,25 @@ def ingest():
         raw_data_path = os.path.join(data_dir, os.listdir(data_dir)[0])
 
         with open(raw_data_path, 'r', encoding='utf-8') as file:
-            cleaned = file.read().replace(',|', '|')
+            cleaned = file.read().replace(',|', '|').replace('"','').replace("'","")
 
         with open(cleaned_data_path, 'w', encoding='utf-8') as cleaned_data:
             cleaned_data.write(cleaned)
     
     @task
     def write(paths):
-        header_path = paths['header_path']
         cleaned_data_path = paths['cleaned_data_path']
         output_name = paths['output_name']
         output_dir = paths['output_dir']
 
-        header = pl.read_csv(header_path, has_header=False).row(0)
+        schema_df = pd.read_csv(f'/opt/airflow/schemas/{paths['name']}.csv')
+
+        header = list(schema_df['attribute'])
 
         dtype = {name : pl.Utf8 for name in header}
 
         df = pl.read_csv(cleaned_data_path, separator='|', new_columns=header, 
-                        schema_overrides=dtype, infer_schema_length=0, encoding="utf-8")
+                        schema_overrides=dtype, infer_schema_length=0, encoding="utf-8", ignore_errors=True)
 
         df.write_csv(os.path.join(output_dir, output_name), line_terminator='\n')
 
@@ -148,11 +135,6 @@ def ingest():
         task_id='trigger_staging',
         trigger_dag_id='stage', 
         conf = {key: f'{{{{ ti.xcom_pull(task_ids="process_config")["{key}"] }}}}' for key in keys},
-        # conf={
-        #     'name': '{{ ti.xcom_pull(task_ids="process_config")["name"] }}',
-        #     'fec_code': '{{ ti.xcom_pull(task_ids="process_config")["fec_code"] }}'
-        #     'run_date' : '{{ ti.xcom_pull(task_ids="process_config")["run_date"] }}'
-        # },
         wait_for_completion=False  
     )
 
@@ -163,7 +145,7 @@ def ingest():
     config = process_config()
     paths = initialize_paths(config)
 
-    start() >> create_dirs(paths) >> get_header(paths) >> get_data(paths) >> preprocess(paths) >> write(paths) >> trigger_staging_task >> stop()
+    start() >> create_dirs(paths) >> get_data(paths) >> preprocess(paths) >> write(paths) >> trigger_staging_task >> stop()
 
 
 ingest()

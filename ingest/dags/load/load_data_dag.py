@@ -2,28 +2,29 @@ from airflow.decorators import dag, task
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
 
-from pendulum import today, duration, datetime
+from pendulum import duration, datetime
 import os
 import shutil
 import pandas as pd
 
-def sql_query(df, table_name):
+def get_schema_dict():
+    schema_dir = '/opt/airflow/schemas/'
+    schemas = [file for file in os.listdir(schema_dir) if file.endswith('.csv')]
+    schema_dict = {}
+    for file_name in schemas:
+        dataset_name = file_name[:-4]
+        schema_dict[dataset_name] = pd.read_csv(schema_dir + file_name)
+    
+    return schema_dict
+
+def sql_query(df, schema_df, table_name):
+
   sql = f"CREATE OR REPLACE TABLE {table_name} (\n"
-  for column in df.columns:
-    data_type = get_snowflake_data_type(df[column].dtype) 
-    sql += f"    {column} {data_type},\n"
+  for attribute in schema_df['attribute']:
+    data_type = schema_df.loc[schema_df['attribute'] == attribute, 'data_type'].values[0]
+    sql += f"    {attribute} {data_type},\n"
   sql = sql[:-2] + ");" 
   return sql
-
-def get_snowflake_data_type(pandas_dtype):
-  if pandas_dtype == 'int64':
-      return 'INT'
-  elif pandas_dtype == 'float64':
-      return 'FLOAT'
-  elif pandas_dtype == 'object': 
-      return 'VARCHAR(420)'  
-  else:
-      return 'VARCHAR(420)' 
 
 default_args = {
     "owner": "admin",
@@ -41,8 +42,7 @@ default_args = {
     schedule=None,
     catchup=False,
     default_args=default_args, 
-    is_paused_upon_creation=False,
-    # params={"run_date": Param(today().to_date_string(), type="string")}
+    is_paused_upon_creation=False
 )
 def load_data():
 
@@ -51,8 +51,7 @@ def load_data():
     @task
     def process_config(**context):
         dag_run = context['dag_run'].conf
-        config = {'name': dag_run.get('name'), 'fec_code': dag_run.get('fec_code'), 'cycle': dag_run.get('cycle'), 
-                  'run_date': dag_run.get('run_date'), 'extension': dag_run.get('extension'), 'temp_dir': dag_run.get('temp_dir')}
+        config = {key: dag_run.get(key) for key in keys}
         return config
 
     @task
@@ -70,7 +69,6 @@ def load_data():
         output_name = f'{run_date}_{name}_{cycle}{extension}'
         table_name = f'{name}_{cycle}'
         file_path = f'{temp_dir}{name}_{cycle}/out/{output_name}'
-        header_path = f'{temp_dir}{name}_{cycle}/in/header/{name}_header.csv'
 
         paths = {
             'output_name': output_name,
@@ -81,7 +79,6 @@ def load_data():
             'name': name,
             'table_name': table_name,
             'file_path': file_path,
-            'header_path': header_path
         }
 
         return paths
@@ -89,7 +86,9 @@ def load_data():
     @task(outlets=['df'])
     def initialize_df(paths):
 
-        header = pd.read_csv(paths['header_path'])
+        schema_df = pd.read_csv(f'/opt/airflow/schemas/{paths['name']}.csv')
+
+        header = list(schema_df['attribute'])
 
         df = pd.read_csv(paths['file_path'], low_memory=False)
 
@@ -117,9 +116,11 @@ def load_data():
         truncate_query.execute(context={})
 
     @task
-    def create_table(paths, df):
+    def create_table(paths, schema_dict, df):
 
-        create_table = sql_query(df, paths['table_name'])
+        schema_df = schema_dict[paths['name']]
+
+        create_table = sql_query(df, schema_df, paths['table_name'])
 
         create_query = SnowflakeOperator(
             task_id="create_query",
@@ -130,10 +131,12 @@ def load_data():
         create_query.execute(context={})
 
     @task
-    def load(paths, df):
+    def load(paths, schema_dict, df):
+
+        schema_df = schema_dict[paths['name']]
 
         load_data = f"""
-        COPY INTO fec_db.raw.{paths['table_name']} {str(tuple(df.columns)).replace("'","")}
+        COPY INTO fec_db.raw.{paths['table_name']} {str(tuple(schema_df['attribute'])).replace("'","")}
             FROM @FEC_DB.RAW.S3_STAGE/campaign-finance/{paths['output_name']}
             FILE_FORMAT = my_csv_format
             ON_ERROR = 'CONTINUE';
@@ -152,18 +155,20 @@ def load_data():
             raise 
     
     @task
-    def clean_up():
-        # shutil.rmtree(f'/opt/airflow/dags/temp/{name}_{cycle}')
+    def clean_up(paths):
+        name, cycle = paths['name'], paths['cycle']
+        shutil.rmtree(f'/opt/airflow/dags/temp/{name}_{cycle}')
         pass
 
     @task
     def stop():
         EmptyOperator(task_id="stop")
 
+    schema_dict = get_schema_dict()
     config = process_config()
     paths = initialize_paths(config)
     df = initialize_df(paths)
 
-    start() >> truncate(paths) >> create_table(paths, df) >> load(paths, df) >> clean_up() >> stop()
+    start() >> truncate(paths) >> create_table(paths, schema_dict, df) >> load(paths, schema_dict, df) >> clean_up(paths) >> stop()
 
 load_data()

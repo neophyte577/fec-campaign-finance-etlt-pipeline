@@ -21,6 +21,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+    - ${AIRFLOW_PROJ_DIR:-.}/schemas:/opt/airflow/schemas
     - ${AIRFLOW_PROJ_DIR:-.}/.aws:/opt/airflow/.aws
   user: "root"
   depends_on:

@@ -4,8 +4,16 @@ from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from pendulum import datetime, now
 
 datasets = {
-    "committee_contributions": "pas2",
-    "operating_expenditures": "oppexp",
+    'candidate_summary': 'weball',
+    'candidate_master': 'cn',
+    'cand_comm_linkage': 'ccl',
+    'congressional_campaigns': 'webl',
+    'committee_master': 'cm',
+    'pac_summary': 'webk',
+    'individual_contributions': 'indiv',
+    'committee_contributions': 'pas2',
+    'committee_transactions': 'oth',
+    'operating_expenditures': 'oppexp'
 }
 
 cycles = ['2024']
@@ -21,7 +29,8 @@ temp_dir = '/opt/airflow/dags/temp/'
     start_date=datetime(2024, 1, 1),
     schedule_interval=None,
     catchup=False,
-    is_paused_upon_creation=False
+    is_paused_upon_creation=False,
+    max_active_tasks=2
 )
 def orchestrate():
     

@@ -21,8 +21,7 @@ def stage():
     @task(outlets=['config'])
     def process_config(**context):
         dag_run = context['dag_run'].conf
-        config = {'name': dag_run.get('name'), 'fec_code': dag_run.get('fec_code'), 'cycle': dag_run.get('cycle'), 
-                  'run_date': dag_run.get('run_date'), 'extension': dag_run.get('extension'), 'temp_dir': dag_run.get('temp_dir')}  
+        config = {key: dag_run.get(key) for key in keys}  
         return config
 
     @task(outlets=['paths'])
