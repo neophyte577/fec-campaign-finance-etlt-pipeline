@@ -4,15 +4,15 @@ from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from pendulum import datetime, now
 
 datasets = {
-    'candidate_summary': 'weball',
-    'candidate_master': 'cn',
-    'cand_comm_linkage': 'ccl',
-    'congressional_campaigns': 'webl',
-    'committee_master': 'cm',
-    'pac_summary': 'webk',
-    'individual_contributions': 'indiv',
+    # 'candidate_summary': 'weball',
+    # 'candidate_master': 'cn',
+    # 'cand_comm_linkage': 'ccl',
+    # 'congressional_campaigns': 'webl',
+    # 'committee_master': 'cm',
+    # 'pac_summary': 'webk',
+    # 'individual_contributions': 'indiv',
     'committee_contributions': 'pas2',
-    'committee_transactions': 'oth',
+    # 'committee_transactions': 'oth',
     'operating_expenditures': 'oppexp'
 }
 
@@ -20,7 +20,7 @@ cycles = ['2024']
 
 today = now().at(0, 0, 0) 
 today_date = today.date() 
-run_date = 'today'
+run_date = 'today' # in lieu of today_date for now
 extension = '.csv'
 temp_dir = '/opt/airflow/dags/temp/'
 

@@ -17,7 +17,7 @@ def get_schema_dict():
     
     return schema_dict
 
-def sql_query(df, schema_df, table_name):
+def sql_query(schema_df, table_name):
 
   sql = f"CREATE OR REPLACE TABLE {table_name} (\n"
   for attribute in schema_df['attribute']:
@@ -82,21 +82,6 @@ def load_data():
         }
 
         return paths
-    
-    @task(outlets=['df'])
-    def initialize_df(paths):
-
-        schema_df = pd.read_csv(f'/opt/airflow/schemas/{paths['name']}.csv')
-
-        header = list(schema_df['attribute'])
-
-        df = pd.read_csv(paths['file_path'], low_memory=False)
-
-        extra = list(set(df.columns) - set(list(header))) 
-
-        df.drop(extra, axis='columns', inplace=True)
-
-        return df
 
     @task
     def start():
@@ -116,11 +101,11 @@ def load_data():
         truncate_query.execute(context={})
 
     @task
-    def create_table(paths, schema_dict, df):
+    def create_table(paths, schema_dict):
 
         schema_df = schema_dict[paths['name']]
 
-        create_table = sql_query(df, schema_df, paths['table_name'])
+        create_table = sql_query(schema_df, paths['table_name'])
 
         create_query = SnowflakeOperator(
             task_id="create_query",
@@ -131,7 +116,7 @@ def load_data():
         create_query.execute(context={})
 
     @task
-    def load(paths, schema_dict, df):
+    def load(paths, schema_dict):
 
         schema_df = schema_dict[paths['name']]
 
@@ -164,11 +149,10 @@ def load_data():
     def stop():
         EmptyOperator(task_id="stop")
 
-    schema_dict = get_schema_dict()
     config = process_config()
     paths = initialize_paths(config)
-    df = initialize_df(paths)
+    schema_dict = get_schema_dict()
 
-    start() >> truncate(paths) >> create_table(paths, schema_dict, df) >> load(paths, schema_dict, df) >> clean_up(paths) >> stop()
+    start() >> truncate(paths) >> create_table(paths, schema_dict) >> load(paths, schema_dict) >> clean_up(paths) >> stop()
 
 load_data()
