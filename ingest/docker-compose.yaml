@@ -78,7 +78,13 @@ services:
     post_start: 
       - command: sh -c "python3 /opt/airflow/config/snowflake_connection.py"
         user: root
-        privileged: true    
+        privileged: true  
+    deploy:
+      resources:
+        limits:
+          cpus: "2"    
+          memory: 12G  
+      
 
   airflow-scheduler:
     <<: *airflow-common
@@ -94,6 +100,11 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: "3"    
+          memory: 12G  
 
   airflow-worker:
     <<: *airflow-common
@@ -114,6 +125,15 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: "4"    
+          memory: 18G  
+        reservations:
+          cpus: "3"
+          memory: 16G
+
 
   airflow-triggerer:
     <<: *airflow-common

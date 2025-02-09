@@ -19,7 +19,7 @@ def get_schema_dict():
 
 def sql_query(schema_df, table_name):
 
-  sql = f"CREATE OR REPLACE TABLE {table_name} (\n"
+  sql = f"CREATE TABLE IF NOT EXISTS {table_name} (\n"
   for attribute in schema_df['attribute']:
     data_type = schema_df.loc[schema_df['attribute'] == attribute, 'data_type'].values[0]
     sql += f"    {attribute} {data_type},\n"
@@ -116,14 +116,13 @@ def load_data():
         create_query.execute(context={})
 
     @task
-    def load(paths, schema_dict):
-
-        schema_df = schema_dict[paths['name']]
+    def load(paths):
 
         load_data = f"""
-        COPY INTO fec_db.raw.{paths['table_name']} {str(tuple(schema_df['attribute'])).replace("'","")}
+        COPY INTO fec_db.raw.{paths['table_name']}
             FROM @FEC_DB.RAW.S3_STAGE/campaign-finance/{paths['output_name']}
-            FILE_FORMAT = my_csv_format
+            FILE_FORMAT = (TYPE = PARQUET)
+            MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE
             ON_ERROR = 'CONTINUE';
         """
         
@@ -153,6 +152,6 @@ def load_data():
     paths = initialize_paths(config)
     schema_dict = get_schema_dict()
 
-    start() >> truncate(paths) >> create_table(paths, schema_dict) >> load(paths, schema_dict) >> clean_up(paths) >> stop()
+    start() >> truncate(paths) >> create_table(paths, schema_dict) >> load(paths) >> clean_up(paths) >> stop()
 
 load_data()

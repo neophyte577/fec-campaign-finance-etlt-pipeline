@@ -31,9 +31,6 @@ def stage():
         cycle = config['cycle']
         run_date = config['run_date']
         extension = config['extension']
-
-        extension = ".csv"
-        cycle = "2024"
     
         output_name = f'{run_date}_{name}_{cycle}{extension}'
 
