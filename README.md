@@ -8,7 +8,7 @@
 - Apache Airflow
 - Astronomer Cosmos
 
-**Scraping**
+**Scraping:**
 - Requests
 - Selenium
 
