@@ -22,7 +22,7 @@
 **Data Warehouse:**
 - Snowflake
 
-**Data Transformations:**
+**Data Transformation:**
 - SQL
 - dbt
 
