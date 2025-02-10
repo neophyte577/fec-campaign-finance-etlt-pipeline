@@ -1,4 +1,18 @@
+## Overview
+
+Established in 1975 to administer and enforce the Federal Election Campaign Act of 1971, the [Federal Election Commission](https://www.fec.gov/data/browse-data/?tab=bulk-data) (FEC) provides detailed public records of campaign finance activity in the U.S., offering invaluable insights into political fundraising, spending, and donor influence. However, obtaining and working with FEC data can be cumbersome due to its size, format inconsistencies, and the frequency of updates.
+
+This project streamlines the realtime ingestion, transformation, and analysis of FEC campaign finance data using an Extract, Transform, Load, Transform (EtLT) approach. The goal is to create a scalable, automated pipeline that ensures timely updates and makes campaign finance data accessible for deeper analysis.
+
+## Pipeline Structure
+
 ![FEC Pipeline Architecture](assets/fec_pipeline_architecture.png)
+
+- Ingestion: A sequence of Airflow DAGs running in a Docker container extracts raw FEC data, applies minimal cleaning/processing, and stages the data in an S3 bucket. The staged data are then loaded into Snowflake for structured storage.
+
+- Transformation: Initial transformations are performed in a localized sandbox environment within a Docker container using dbt, Pandas, and Polars. Once validated, repeatable transformations can be pushed to a separate Docker container running Astronomer's Cosmos scheduler integrated with dbt and Snowflake so as to automate future transformation of data periodically arriving from the ingestion step.
+
+- Serving: The cleaned and transformed data are visualized in Metabase.
 
 ## Data Stack
 **Containerization:**
