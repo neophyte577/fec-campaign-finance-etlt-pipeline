@@ -1,7 +1,7 @@
 ![FEC Pipeline Architecture](assets/fec_pipeline_architecture.png)
 
 ## Data Stack
-**Containerization**
+**Containerization:**
 - Docker
 
 **Orchestration:**
