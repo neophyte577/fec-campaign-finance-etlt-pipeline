@@ -44,3 +44,6 @@ This project streamlines the realtime ingestion, transformation, and analysis of
 - Metabase
 
 
+## ERD
+
+![FEC Bulk Data ERD](assets/fec_bulk_data_erd.png)
