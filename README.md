@@ -8,11 +8,11 @@ This project streamlines the realtime ingestion, transformation, and analysis of
 
 ![FEC Pipeline Architecture](assets/fec_pipeline_architecture.png)
 
-- Ingestion: A sequence of Airflow DAGs running in a Docker container extracts raw FEC data, applies minimal cleaning/processing, and stages the data in an S3 bucket. The staged data are then loaded into Snowflake for structured storage.
+- **Ingestion**: A sequence of Airflow DAGs running in a Docker container extracts raw FEC data, applies minimal cleaning/processing, imposes the schema prescribed by data dictionary tables scraped directly from the FEC's website, then stages the data in an S3 bucket. The staged data are finally loaded into Snowflake for structured storage.
 
-- Transformation: Initial transformations are performed in a localized sandbox environment within a Docker container using dbt, Pandas, and Polars. Once validated, repeatable transformations can be pushed to a separate Docker container running Astronomer's Cosmos scheduler integrated with dbt and Snowflake so as to automate future transformation of data periodically arriving from the ingestion step.
+- **Transformation**: Initial transformations are performed in a localized sandbox environment within a Docker container using dbt, Pandas, and Polars. Once validated, repeatable transformations can be pushed to a separate Docker container running Astronomer's Cosmos scheduler integrated with dbt and Snowflake so as to automate future transformation of data periodically arriving from the ingestion step.
 
-- Serving: The cleaned and transformed data are visualized in Metabase.
+- **Serving**: The cleaned and transformed data are visualized in Metabase.
 
 ## Data Stack
 **Containerization:**
