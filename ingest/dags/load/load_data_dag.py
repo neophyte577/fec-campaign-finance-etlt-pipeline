@@ -90,7 +90,7 @@ def load_data():
     @task
     def truncate(paths):
 
-        truncate_table = f"TRUNCATE TABLE IF EXISTS fec_db.raw.{paths['table_name']};"
+        truncate_table = f"TRUNCATE TABLE IF EXISTS fec.raw.{paths['table_name']};"
 
         truncate_query = SnowflakeOperator(
             task_id="snowflake_query",
@@ -119,8 +119,8 @@ def load_data():
     def load(paths):
 
         load_data = f"""
-        COPY INTO fec_db.raw.{paths['table_name']}
-            FROM @FEC_DB.RAW.S3_STAGE/campaign-finance/{paths['output_name']}
+        COPY INTO fec.raw.{paths['table_name']}
+            FROM @FEC.RAW.S3_STAGE/campaign-finance/{paths['output_name']}
             FILE_FORMAT = (TYPE = PARQUET)
             MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE
             ON_ERROR = 'CONTINUE';

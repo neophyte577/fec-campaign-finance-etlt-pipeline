@@ -7,6 +7,7 @@ import requests
 import os, gc
 import shutil 
 import zipfile
+import concurrent.futures
 import polars as pl
 import pandas as pd
 
@@ -162,18 +163,21 @@ def ingest():
                 cleaned = file.read().replace(',|', '|').replace('"','').replace("'","")
             with open(cleaned_data_path, 'w', encoding='utf-8') as cleaned_data:
                 cleaned_data.write(cleaned)
-            gc.collect()
-        else: # in chunks
-            chunk_size = 100000  
-            with open(raw_data_path, 'r', encoding='utf-8') as file, open(cleaned_data_path, 'w', encoding='utf-8') as cleaned_data:
-                while True:
-                    lines = file.readlines(chunk_size)
-                    if not lines:
-                        break
-                    for line in lines:
-                        cleaned_line = line.replace(',|', '|').replace('"', '').replace("'", "")
+        else: # in chunks, concurrently threaded
+            chunk_size = 100000
+            def clean_line(line):
+                return line.replace(',|', '|').replace('"', '').replace("'", "")
+            def process_chunk(chunk_lines, cleaned_data_path):
+                with open(cleaned_data_path, 'a', encoding='utf-8') as cleaned_data:
+                    for cleaned_line in map(clean_line, chunk_lines):
                         cleaned_data.write(cleaned_line + '\n')
-                    gc.collect()
+            with open(raw_data_path, 'r', encoding='utf-8') as file:
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    while True:
+                        lines = file.readlines(chunk_size)
+                        if not lines:
+                            break
+                        executor.submit(process_chunk, lines, cleaned_data_path)
 
         gc.collect()
     
