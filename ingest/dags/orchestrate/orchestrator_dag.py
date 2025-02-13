@@ -18,6 +18,9 @@ datasets = {
 
 cycles = ['2024']
 
+# cycles = ['2026', '2024', '2022', '2020', '2018', '2016', '2014','2012', '2010', '2008', '2006', '2004', '2002', '2000', 
+#           '1998', '1996', '1994', '1992', '1990', '1988', '1986', '1984', '1982', '1980'] 
+
 today = now().at(0, 0, 0) 
 today_date = today.date() 
 run_date = 'today' # in lieu of today_date for now
@@ -42,7 +45,7 @@ def orchestrate():
     for cycle in cycles:
         for name, fec_code in datasets.items():
             triggers.append(TriggerDagRunOperator(
-                task_id=f"trigger_{name}",
+                task_id=f"trigger_{name}_{cycle}",
                 trigger_dag_id="fetch",
                 conf={'name': name, 'fec_code': fec_code,  'cycle': cycle, 'run_date': run_date, 
                       'extension': extension, 'temp_dir': temp_dir}, 

@@ -21,7 +21,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    - ${AIRFLOW_PROJ_DIR:-.}/schemas:/opt/airflow/schemas
+    - ${AIRFLOW_PROJ_DIR:-.}/metadata/:/opt/airflow/metadata
     - ${AIRFLOW_PROJ_DIR:-.}/.aws:/opt/airflow/.aws
   user: "root"
   depends_on:
@@ -105,6 +105,9 @@ services:
         limits:
           cpus: "3"    
           memory: 12G  
+        reservations:
+          cpus: "2"
+          memory: 6G
 
   airflow-worker:
     <<: *airflow-common

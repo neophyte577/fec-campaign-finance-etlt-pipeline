@@ -142,6 +142,9 @@ def ingest():
                 for file in data_files:
                     zip_ref.extract(file, input_dir)
 
+        # with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        #     zip_ref.extractall(input_dir)
+
         os.remove(zip_path)
 
     @task
@@ -187,7 +190,7 @@ def ingest():
                     return DTYPE_MAPPING[sql_type]
             return pl.Utf8  # default to Utf8 
 
-        schema_df = pd.read_csv(f'/opt/airflow/schemas/{paths["name"]}.csv')
+        schema_df = pd.read_csv(f'/opt/airflow/metadata/schemas/{paths["name"]}.csv')
         header = list(schema_df['attribute'])
         dtype = {row['attribute']: parse_data_type(row['data_type']) for index, row in schema_df.iterrows()}
 
@@ -202,12 +205,15 @@ def ingest():
                 df = df.with_columns(df[row['attribute']].cast(dtype[row['attribute']]))
             df.write_parquet(os.path.join(output_dir, output_name))
         else: # in chunks
-            df_iterator = pd.read_csv(cleaned_data_path, sep='|', names=header, dtype=dtype, chunksize=100000)
-            for chunk in df_iterator:
-                df = pl.DataFrame(chunk)
+            reader = pl.read_csv_batched(cleaned_data_path, separator='|', new_columns=header, 
+                                         schema_overrides=dtype, infer_schema_length=0, encoding="utf-8", ignore_errors=True)
+            batches = reader.next_batches(100000)
+            while batches:
+                df = pl.concat(batches)
                 for index, row in schema_df.iterrows():
                     df = df.with_columns(df[row['attribute']].cast(dtype[row['attribute']]))
                 df.write_parquet(os.path.join(output_dir, output_name), append=True)
+                batches = reader.next_batches(100000)
                 gc.collect()
 
 

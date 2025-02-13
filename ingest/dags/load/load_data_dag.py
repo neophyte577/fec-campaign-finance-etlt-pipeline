@@ -8,7 +8,7 @@ import shutil
 import pandas as pd
 
 def get_schema_dict():
-    schema_dir = '/opt/airflow/schemas/'
+    schema_dir = '/opt/airflow/metadata/schemas/'
     schemas = [file for file in os.listdir(schema_dir) if file.endswith('.csv')]
     schema_dict = {}
     for file_name in schemas:
