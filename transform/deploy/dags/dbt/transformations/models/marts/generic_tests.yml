@@ -1,15 +1,25 @@
 models:
-  - name: fct_orders
-    columns:
-      - name: order_key
-        tests:
-          - unique
-          - not_null
-          - relationships:
-              to: ref('stg_tpch_orders')
-              field: order_key
-              severity: warn
-      - name: status_code
-        tests:
-          - accepted_values:
-              values: ['P','O','F']
+
+  - name: agg_oper_exp_categories
+    description: "Aggregated operating expenditures by category"
+    tests:
+      - not_null:
+          column_name: CATEGORY_DESC
+      - not_null:
+          column_name: TRANSACTION_AMT
+
+  - name: agg_indiv_contr_by_cand
+    description: "Aggregated contributions by candidate"
+    tests:
+      - not_null:
+          column_name: cand_name
+      - not_null:
+          column_name: party_code_desc
+      - not_null:
+          column_name: total_contributions
+      - unique:
+          column_name:
+            - cand_name
+      - accepted_values:
+          column_name: cand_office
+          values: ['House', 'Senate', 'President']           

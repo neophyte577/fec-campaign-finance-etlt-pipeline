@@ -1,0 +1,33 @@
+models:
+
+  - name: agg_oper_exp_categories
+    description: "Aggregated operating expenditures by category"
+    tests:
+      - not_null:
+          column_name: CATEGORY_DESC
+      - not_null:
+          column_name: TRANSACTION_AMT
+
+  - name: agg_indiv_contr_by_cand
+    description: "Aggregated contributions by candidate"
+    tests:
+      - not_null:
+          column_name: cand_name
+      - not_null:
+          column_name: party_code_desc
+      - not_null:
+          column_name: total_contributions
+      - unique:
+          columns:
+            - cand_name
+      - accepted_values:
+          column_name: cand_office
+          values: ['House', 'Senate', 'President']           
+      - data_type:
+          column_name: total_contributions
+          type: numeric
+      - custom:
+          sql: >
+            SELECT COUNT(*)
+            FROM {{ ref('your_model_name_here') }}
+            WHERE total_contributions < 0

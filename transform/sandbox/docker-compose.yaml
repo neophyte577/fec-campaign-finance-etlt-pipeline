@@ -82,9 +82,17 @@ services:
       - command: sh -c "mkdir -p opt/airflow/dbt_backup/$(date +"%Y-%m-%d_%H-%M-%S")/ && rsync -a --delete /opt/airflow/dbt/ /opt/airflow/dbt_backup/$(date +"%Y-%m-%d_%H-%M-%S")/"
         user: root
         privileged: true
+      - command: sh -c "python3 /opt/airflow/config/snowflake_connection.py"
+        user: root
+        privileged: true  
     pre_stop: # write changes to deployment on container shutdown
       - command: sh -c "rsync -a --delete /opt/airflow/dbt/ /opt/airflow/dbt_staging/"    
         user: root
+    deploy:
+      resources:
+        limits:
+          cpus: "2"    
+          memory: 12G  
 
   airflow-scheduler:
     <<: *airflow-common
@@ -120,6 +128,11 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: "2"    
+          memory: 12G  
 
   airflow-triggerer:
     <<: *airflow-common
@@ -192,8 +205,8 @@ services:
       <<: *airflow-common-env
       _AIRFLOW_DB_MIGRATE: 'true'
       _AIRFLOW_WWW_USER_CREATE: 'true'
-      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
-      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-sandbox}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-sandbox}
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "root"
     volumes:
@@ -239,6 +252,8 @@ services:
     entrypoint: ["tail", "-f", "/dev/null"]  # keep container running 
     environment:
       DBT_PROFILES_DIR: /opt/airflow/dbt 
+    ports:
+      - "8000:8000"
 
 volumes:
   postgres-db-volume:

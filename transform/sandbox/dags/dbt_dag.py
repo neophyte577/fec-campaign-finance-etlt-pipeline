@@ -4,16 +4,13 @@ from airflow.utils.task_group import TaskGroup
 from airflow.operators.empty import EmptyOperator
 from datetime import datetime
 
-PROJECT_DIR = '/opt/airflow/'
-PROFILES_DIR = '/opt/airflow/dbt'
+DBT_DIR = '/opt/airflow/dbt/transformations'
 
-# Define default arguments
 default_args = {
     'owner': 'airflow',
     'retries': 1,
 }
 
-# Initialize the DAG
 with DAG('dbt_dag',
          default_args=default_args,
          schedule_interval='@daily',
@@ -22,46 +19,82 @@ with DAG('dbt_dag',
     
     start = EmptyOperator(task_id="start")
 
-    with TaskGroup(group_id='dbt_tasks') as dbt_tasks:
+    with TaskGroup(group_id='staging') as staging:
     
-        stg_tpch_line_items = BashOperator(
-            task_id='stg_tpch_line_items',
-            bash_command='cd /opt/airflow/dbt && dbt run --models stg_tpch_line_items',
+        stg_candidates = BashOperator(
+            task_id='stg_candidates',
+            bash_command=f'cd {DBT_DIR} && dbt run --models stg_candidates',
         )
 
-        stg_tpch_orders = BashOperator(
-            task_id='stg_tpch_orders',
-            bash_command='cd /opt/airflow/dbt && dbt run --models stg_tpch_orders',
+        stg_committees = BashOperator(
+            task_id='stg_committees',
+            bash_command=f'cd {DBT_DIR} && dbt run --models stg_committees',
         )
 
-        int_order_items_summary = BashOperator(
-            task_id='int_order_items_summary',
-            bash_command='cd /opt/airflow/dbt && dbt run --models int_order_items_summary',
+        stg_committee_contributions = BashOperator(
+            task_id='stg_committee_contributions',
+            bash_command=f'cd {DBT_DIR} && dbt run --models stg_committee_contributions',
         )
 
-        int_order_items = BashOperator(
-            task_id='int_order_items',
-            bash_command='cd /opt/airflow/dbt && dbt run --models int_order_items',
+        stg_committee_transactions = BashOperator(
+            task_id='stg_committee_transactions',
+            bash_command=f'cd {DBT_DIR} && dbt run --models stg_committee_transactions',
         )
 
-        fct_orders = BashOperator(
-            task_id='fct_orders',
-            bash_command='cd /opt/airflow/dbt && dbt run --models fct_orders',
+        stg_individual_contributions = BashOperator(
+            task_id='stg_individual_contributions',
+            bash_command=f'cd {DBT_DIR} && dbt run --models stg_individual_contributions',
+        )
+
+        stg_operating_expenditures = BashOperator(
+            task_id='stg_operating_expenditures',
+            bash_command=f'cd {DBT_DIR} && dbt run --models stg_operating_expenditures',
+        )
+
+    with TaskGroup(group_id='marts') as marts:
+    
+        fct_committee_contributions = BashOperator(
+            task_id='fct_committee_contributions',
+            bash_command=f'cd {DBT_DIR} && dbt run --models fct_committee_contributions',
+        )
+
+        agg_indiv_contr_by_cand = BashOperator(
+            task_id='agg_indiv_contr_by_cand',
+            bash_command=f'cd {DBT_DIR} && dbt run --models agg_indiv_contr_by_cand',
+        )
+
+        agg_indiv_contr_by_state = BashOperator(
+            task_id='agg_indiv_contr_by_state',
+            bash_command=f'cd {DBT_DIR} && dbt run --models agg_indiv_contr_by_state',
+        )
+
+        agg_oper_exp_by_cand = BashOperator(
+            task_id='agg_oper_exp_by_cand',
+            bash_command=f'cd {DBT_DIR} && dbt run --models agg_oper_exp_by_cand',
+        )
+
+        agg_oper_exp_by_comm = BashOperator(
+            task_id='agg_oper_exp_by_comm',
+            bash_command=f'cd {DBT_DIR} && dbt run --models agg_oper_exp_by_comm',
+        )
+
+        agg_oper_exp_categories = BashOperator(
+            task_id='agg_oper_exp_categories',
+            bash_command=f'cd {DBT_DIR} && dbt run --models agg_oper_exp_categories',
         )
     
-    with TaskGroup(group_id='dbt_tests') as dbt_tests:
+    with TaskGroup(group_id='tests') as tests:
 
         fct_orders_date_valid = BashOperator(
             task_id='fct_orders_date_valid',
-            bash_command='cd /opt/airflow/dbt && dbt run -s fct_orders_date_valid',
+            bash_command=f'cd {DBT_DIR} && dbt run -s fct_orders_date_valid',
         )
 
         fct_orders_discount = BashOperator(
             task_id='fct_orders_discount',
-            bash_command='cd /opt/airflow/dbt && dbt run -s fct_orders_discount',
+            bash_command=f'cd {DBT_DIR} && dbt run -s fct_orders_discount',
         )
 
     stop = EmptyOperator(task_id="stop")
 
-    start >> [stg_tpch_line_items, stg_tpch_orders]  >> int_order_items >> int_order_items_summary >> fct_orders >> \
-    [fct_orders_date_valid, fct_orders_discount] >> stop
+    start >> staging  >> marts >> tests >>  stop
