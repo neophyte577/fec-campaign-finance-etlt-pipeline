@@ -4,9 +4,9 @@ models:
     description: "Aggregated operating expenditures by category"
     tests:
       - not_null:
-          column_name: category
+          column_name: CATEGORY_DESC
       - not_null:
-          column_name: transaction_amt
+          column_name: TRANSACTION_AMT
 
   - name: agg_indiv_contr_by_cand
     description: "Aggregated contributions by candidate"
@@ -14,7 +14,7 @@ models:
       - not_null:
           column_name: cand_name
       - not_null:
-          column_name: party
+          column_name: party_code_desc
       - not_null:
           column_name: total_contributions
       - unique:

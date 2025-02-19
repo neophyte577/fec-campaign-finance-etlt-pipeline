@@ -6,8 +6,7 @@ sources:
     schema: raw
     tables:
 
-      # CODEBOOKS
-
+      # CODEBOOK
       - name: parties
         columns:
           - name: party_code

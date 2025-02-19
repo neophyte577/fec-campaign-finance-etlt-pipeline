@@ -1,7 +1,7 @@
 SELECT COUNT(*)
 FROM (
-    SELECT cand_name, cmte_id, transaction_dt, COUNT(*)
+    SELECT cand_name, COUNT(*)
     FROM {{ ref('agg_indiv_contr_by_cand') }}
-    GROUP BY cand_name, cmte_id, transaction_dt
+    GROUP BY cand_name
     HAVING COUNT(*) > 1
 ) AS duplicates
