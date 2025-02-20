@@ -6,7 +6,7 @@ This project streamlines the realtime ingestion, transformation, and analysis of
 
 ## Pipeline Structure
 
-![FEC Pipeline Architecture](assets/fec_pipeline_architecture.png)
+![FEC Pipeline Architecture](assets/diagrams/fec_pipeline_architecture.png)
 
 - **Ingestion**: A sequence of Airflow DAGs running in a Docker container extracts raw FEC data, applies minimal cleaning/processing, imposes the schema prescribed by data dictionary tables scraped directly from the FEC's website, then stages the data in an S3 bucket. The staged data are finally loaded into Snowflake for structured storage.
 
@@ -46,4 +46,9 @@ This project streamlines the realtime ingestion, transformation, and analysis of
 
 ## ERD
 
-![FEC Bulk Data ERD](assets/fec_bulk_data_erd.png)
+![FEC Bulk Data ERD](assets/diagrams/fec_bulk_data_erd.png)
+
+## Individual Contributions
+
+![Individual Contributions](assets/dashboards/individual_contributions.png)
+
