@@ -48,7 +48,8 @@ This project streamlines the realtime ingestion, transformation, and analysis of
 
 ![FEC Bulk Data ERD](assets/diagrams/fec_bulk_data_erd.png)
 
-## Individual Contributions
+## Dashboards
+
+### Individual Contributions
 
 ![Individual Contributions](assets/dashboards/individual_contributions.png)
-
