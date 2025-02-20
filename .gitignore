@@ -6,3 +6,4 @@ airflow.cfg
 credentials
 .user.yml
 snowflake_connection.py
+metabase.db/
