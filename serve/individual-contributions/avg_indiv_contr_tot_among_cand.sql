@@ -1,0 +1,1 @@
+SELECT AVG(total_contributions) FROM FEC.TRANSFORMED.agg_indiv_contr_by_cand;
