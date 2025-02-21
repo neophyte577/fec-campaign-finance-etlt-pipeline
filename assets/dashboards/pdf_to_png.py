@@ -22,7 +22,7 @@ def convert_and_merge(title):
         merged_image.save(f'./assets/dashboards/{title}.png', 'PNG')
 
 def main():
-    titles = ['individual_contributions']
+    titles = ['individual_contributions', 'operating_expenditures']
     
     for title in titles:
         convert_and_merge(title)

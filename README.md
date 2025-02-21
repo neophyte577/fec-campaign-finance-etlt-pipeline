@@ -53,3 +53,7 @@ This project streamlines the realtime ingestion, transformation, and analysis of
 ### Individual Contributions
 
 ![Individual Contributions](assets/dashboards/individual_contributions.png)
+
+### Operating Expenditures
+
+![Operating Expenditures](assets/dashboards/operating_expenditures.png)
