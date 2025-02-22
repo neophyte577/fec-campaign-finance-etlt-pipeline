@@ -17,13 +17,14 @@ def convert_and_merge(title):
         y_offset = 0
         for page in pages:
             merged_image.paste(page, (0, y_offset))
-            y_offset += page.height  
+            y_offset += page.height
         
         merged_image.save(f'./assets/dashboards/{title}.png', 'PNG')
 
 def main():
-    titles = ['individual_contributions', 'operating_expenditures']
-    
+
+    titles = ['individual_contributions', 'operating_expenditures', 'committee_contributions']
+
     for title in titles:
         convert_and_merge(title)
 

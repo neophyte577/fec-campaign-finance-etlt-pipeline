@@ -43,7 +43,6 @@ This project streamlines the realtime ingestion, transformation, and analysis of
 **Visualization:**
 - Metabase
 
-
 ## ERD
 
 ![FEC Bulk Data ERD](assets/diagrams/fec_bulk_data_erd.png)
@@ -57,3 +56,7 @@ This project streamlines the realtime ingestion, transformation, and analysis of
 ### Operating Expenditures
 
 ![Operating Expenditures](assets/dashboards/operating_expenditures.png)
+
+### Committee Contributions
+
+![Committee Contributions](assets/dashboards/committee_contributions.png)
