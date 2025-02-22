@@ -126,8 +126,6 @@ def ingest():
                     if chunk:
                         zipped.write(chunk)
                     gc.collect()
-        
-        gc.collect()
 
     @task
     def extract_data(paths):
@@ -163,14 +161,18 @@ def ingest():
                 cleaned = file.read().replace(',|', '|').replace('"','').replace("'","")
             with open(cleaned_data_path, 'w', encoding='utf-8') as cleaned_data:
                 cleaned_data.write(cleaned)
+
         else: # in chunks, concurrently threaded
             chunk_size = 100000
+
             def clean_line(line):
                 return line.replace(',|', '|').replace('"', '').replace("'", "")
+            
             def process_chunk(chunk_lines, cleaned_data_path):
                 with open(cleaned_data_path, 'a', encoding='utf-8') as cleaned_data:
                     for cleaned_line in map(clean_line, chunk_lines):
                         cleaned_data.write(cleaned_line + '\n')
+
             with open(raw_data_path, 'r', encoding='utf-8') as file:
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     while True:
@@ -189,6 +191,8 @@ def ingest():
 
         def parse_data_type(data_type):
             data_type_upper = data_type.upper()
+            if 'DATE' in data_type_upper:
+                return pl.Utf8
             for sql_type in DTYPE_MAPPING:
                 if sql_type in data_type_upper:
                     return DTYPE_MAPPING[sql_type]
@@ -201,25 +205,36 @@ def ingest():
         file_size = os.path.getsize(cleaned_data_path)
         file_size_mb = file_size / (1024 * 1024)
 
+        def convert_date_columns(df, date_columns):
+            for date_col in date_columns:
+                if date_col in df.columns:
+                    df = df.with_columns(pl.col(date_col).str.strptime(pl.Date, format="%m%d%Y", strict=False))
+
+            return df
+        
+        date_columns = [row['attribute'] for index, row in schema_df.iterrows() if 'DATE' in row['data_type'].upper()]     
+
         # condition approach on MG_THRESHOLD size to parse by row
-        if file_size_mb < MB_THRESHOLD: # all at once
+        if file_size_mb < MB_THRESHOLD:  # all at once
+
             df = pl.read_csv(cleaned_data_path, separator='|', new_columns=header, 
                             schema_overrides=dtype, infer_schema_length=0, encoding="utf-8", ignore_errors=True)
-            for index, row in schema_df.iterrows():
-                df = df.with_columns(df[row['attribute']].cast(dtype[row['attribute']]))
+
+            df = convert_date_columns(df, date_columns) 
             df.write_parquet(os.path.join(output_dir, output_name))
-        else: # in chunks
+
+        else:  # in chunks
+
             reader = pl.read_csv_batched(cleaned_data_path, separator='|', new_columns=header, 
-                                         schema_overrides=dtype, infer_schema_length=0, encoding="utf-8", ignore_errors=True)
+                                        schema_overrides=dtype, infer_schema_length=0, encoding="utf-8", ignore_errors=True)
+
             batches = reader.next_batches(100000)
             while batches:
                 df = pl.concat(batches)
-                for index, row in schema_df.iterrows():
-                    df = df.with_columns(df[row['attribute']].cast(dtype[row['attribute']]))
+                df = convert_date_columns(df, date_columns)  # Ensure conversion here
                 df.write_parquet(os.path.join(output_dir, output_name), append=True)
                 batches = reader.next_batches(100000)
                 gc.collect()
-
 
     trigger_staging_task = TriggerDagRunOperator(
         task_id='trigger_staging',
