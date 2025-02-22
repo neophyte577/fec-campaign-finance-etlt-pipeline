@@ -25,6 +25,6 @@ SELECT
         WHEN oe.amndt_ind = 'A' THEN 'Amendment'
         WHEN oe.amndt_ind = 'T' THEN 'Termination'
         ELSE oe.amndt_ind
-    END AS amndt_id
+    END AS amndt_ind
 FROM stg_operating_expenditures oe
 INNER JOIN report_types rt ON oe.rpt_tp = rt.rpt_tp_code

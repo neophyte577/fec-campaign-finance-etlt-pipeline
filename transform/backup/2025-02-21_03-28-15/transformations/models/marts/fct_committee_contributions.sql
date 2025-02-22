@@ -17,7 +17,6 @@ SELECT
     cmte.cmte_nm AS cmte_name,
     cc.amndt_ind,
     cc.report_type,
-    cc.transaction_tp AS transaction_tp_code,
     cc.transaction_type,
     cand.cand_name AS cand_recipient,
     cc.city AS cand_city,

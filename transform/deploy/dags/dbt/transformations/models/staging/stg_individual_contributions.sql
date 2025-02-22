@@ -30,7 +30,7 @@ SELECT
         WHEN ic.amndt_ind = 'A' THEN 'Amendment'
         WHEN ic.amndt_ind = 'T' THEN 'Termination'
         WHEN ic.amndt_ind = NULL THEN ic.amndt_ind
-    END AS amndt_id
+    END AS amndt_ind
 FROM stg_individual_contributions ic
 INNER JOIN report_types r ON ic.rpt_tp = r.rpt_tp_code
 INNER JOIN transaction_types t ON ic.transaction_tp = t.tran_tp_code

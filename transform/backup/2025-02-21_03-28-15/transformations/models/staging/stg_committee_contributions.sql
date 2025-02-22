@@ -23,7 +23,6 @@ SELECT
     cc.employer,
     cc.occupation,
     r.report_type, -- FOREIGN KEY
-    cc.transaction_tp,
     t.transaction_type, -- FOREIGN KEY
     cc.transaction_dt,
     cc.transaction_amt,

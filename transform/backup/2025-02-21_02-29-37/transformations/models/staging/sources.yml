@@ -1,0 +1,209 @@
+version: 2
+
+sources:
+  - name: fec  
+    database: fec 
+    schema: raw
+    tables:
+
+      # CODEBOOK
+      - name: parties
+        columns:
+          - name: party_code
+            tests:
+              - unique
+              - not_null   
+
+      - name: committee_types
+        columns:
+          - name: cmte_tp_code
+            tests:
+              - unique
+              - not_null   
+
+      - name: report_types
+        columns:
+          - name: rpt_tp_code
+            tests:
+              - unique
+              - not_null  
+
+      - name: transaction_types
+        columns:
+          - name: tran_tp_code
+            tests:
+              - unique
+              - not_null   
+
+      # TABLES
+
+      - name: candidate_master
+        columns:
+          # PK
+          - name: cand_id
+            tests:
+              - unique
+              - not_null
+          # FK
+          - name: cand_pty_affiliation
+            tests:
+              - relationships:
+                  to: source('fec', 'parties')
+                  field: party_code
+
+      - name: candidate_summary
+        columns:
+          # PK
+          - name: cand_id
+            tests:
+              - unique
+              - not_null
+          # FK
+          - name: cand_pty_affiliation
+            tests:
+              - relationships:
+                  to: source('fec', 'parties')
+                  field: party_code
+
+      - name: congressional_campaigns
+        columns:
+          # PK
+          - name: cand_id
+            tests:
+              - unique
+              - not_null
+          # FK
+          - name: cand_pty_affiliation
+            tests:
+              - relationships:
+                  to: source('fec', 'parties')
+                  field: party_code
+
+      - name: committee_master
+        columns:
+          # PK
+          - name: cmte_id
+            tests:
+              - unique
+              - not_null
+          # FK
+          - name: cmte_tp
+            tests:
+              - relationships:
+                  to: source('fec', 'committee_types')
+                  field: cmte_tp_code
+          - name: cmte_pty_affiliation
+            tests:
+              - relationships:
+                  to: source('fec', 'parties')
+                  field: party_code  
+
+      - name: pac_summary
+        columns:
+          # PK
+          - name: cmte_id
+            tests:
+              - unique
+              - not_null
+          # FK
+          - name: cmte_tp
+            tests:
+              - relationships:
+                  to: source('fec', 'committee_types')
+                  field: cmte_tp_code
+
+      - name: committee_contributions
+        columns:
+          # PK
+          - name: sub_id
+            tests:
+              - unique
+              - not_null
+          # FK
+          - name: rpt_tp
+            tests:
+              - relationships:
+                  to: source('fec', 'report_types')
+                  field: rpt_tp_code
+          - name: transaction_tp
+            tests:
+              - relationships:
+                  to: source('fec', 'transaction_types')
+                  field: tran_tp_code
+
+      - name: individual_contributions
+        columns:
+          # PK
+          - name: sub_id
+            tests:
+              - unique
+              - not_null
+          # FK
+          - name: rpt_tp
+            tests:
+              - relationships:
+                  to: source('fec', 'report_types')
+                  field: rpt_tp_code
+          - name: transaction_tp
+            tests:
+              - relationships:
+                  to: source('fec', 'transaction_types')
+                  field: tran_tp_code
+
+      - name: committee_transactions
+        columns:
+          # PK
+          - name: sub_id
+            tests:
+              - unique
+              - not_null
+          # FK
+          - name: rpt_tp
+            tests:
+              - relationships:
+                  to: source('fec', 'report_types')
+                  field: rpt_tp_code
+          - name: transaction_tp
+            tests:
+              - relationships:
+                  to: source('fec', 'transaction_types')
+                  field: tran_tp_code
+
+      - name: operating_expenditures
+        columns:
+          # PK
+          - name: sub_id
+            tests:
+              - unique
+              - not_null
+          # FK
+          - name: rpt_tp
+            tests:
+              - relationships:
+                  to: source('fec', 'report_types')
+                  field: rpt_tp_code
+
+      - name: cand_comm_linkage
+        columns:
+          # PK (composite)
+          - name: cmte_id
+            tests:
+              - unique
+              - not_null
+          - name: cand_id
+            tests:
+              - relationships:
+                  to: source('fec', 'committee_master')
+                  field: committee_id
+          - name: linkage_id
+            tests:
+              - relationships:
+                  to: source('fec', 'candidate_master')
+                  field: cand_id
+          # FK
+          - name: cmte_tp
+            tests:
+              - relationships:
+                  to: source('fec', 'committee_types')
+                  field: cmte_tp_code
+  

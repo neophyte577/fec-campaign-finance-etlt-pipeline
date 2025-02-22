@@ -13,9 +13,9 @@ candidates AS (
 SELECT
     oe.sub_id,
     oe.cmte_id,
-    cmte.cmte_nm as cmte_name,
+    cmte.cmte_nm AS cmte_name,
     cand.cand_name,
-    oe.name,
+    oe.name AS entity_name,
     oe.city,
     oe.state,
     oe.purpose,
@@ -29,4 +29,4 @@ WHERE oe.state IN ('AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
                 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 
                 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 
                 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 
-                'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC')
+                'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC', 'US')

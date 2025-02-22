@@ -4,12 +4,17 @@ WITH operating_expenditures AS (
 
 committees AS (
     SELECT * FROM {{ ref('stg_committees') }}
+),
+
+candidates AS (
+    SELECT * FROM {{ ref('stg_candidates') }}
 )
 
 SELECT
-    oe.sub_id, -- PRIIMARY KEY
+    oe.sub_id,
     oe.cmte_id,
-    cmte.cmte_nm AS cmte_name,
+    cmte.cmte_nm as cmte_name,
+    cand.cand_name,
     oe.name,
     oe.city,
     oe.state,
@@ -18,7 +23,8 @@ SELECT
     oe.transaction_amt,
     oe.transaction_dt
 FROM operating_expenditures oe
-INNER JOIN committees cmte ON oe.cmte_id = cmte.cmte_id
+LEFT JOIN committees cmte ON oe.cmte_id = cmte.cmte_id
+INNER JOIN candidates cand ON cmte.cand_id = cand.cand_id
 WHERE oe.state IN ('AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 
                 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 
                 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 

@@ -14,10 +14,9 @@ committees AS (
 SELECT
     cc.sub_id, -- PRIMARY KEY
     cc.cmte_id,
-    cmte.cmte_nm AS cmte_name,
+    cmte.cmte_nm,
     cc.amndt_ind,
     cc.report_type,
-    cc.transaction_tp AS transaction_tp_code,
     cc.transaction_type,
     cand.cand_name AS cand_recipient,
     cc.city AS cand_city,

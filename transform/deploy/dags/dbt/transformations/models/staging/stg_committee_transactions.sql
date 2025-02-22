@@ -33,7 +33,7 @@ SELECT
         WHEN ct.amndt_ind = 'T' THEN 'Termination'
         WHEN ct.amndt_ind IS NULL THEN NULL
         ELSE amndt_ind
-    END as amndt_id,
+    END as amndt_ind,
 FROM stg_committee_transactions ct
 INNER JOIN report_types r ON ct.rpt_tp = r.rpt_tp_code
 INNER JOIN transaction_types t ON ct.transaction_tp = t.tran_tp_code

@@ -23,6 +23,7 @@ SELECT
     cc.employer,
     cc.occupation,
     r.report_type, -- FOREIGN KEY
+    cc.transaction_tp,
     t.transaction_type, -- FOREIGN KEY
     cc.transaction_dt,
     cc.transaction_amt,
@@ -32,7 +33,7 @@ SELECT
         WHEN cc.amndt_ind = 'A' THEN 'Amendment'
         WHEN cc.amndt_ind = 'T' THEN 'Termination'
         ELSE amndt_ind
-    END AS amndt_id,
+    END AS amndt_ind,
 FROM stg_committee_contributions cc
 INNER JOIN report_types r ON cc.rpt_tp = r.rpt_tp_code 
 INNER JOIN transaction_types t ON cc.transaction_tp = t.tran_tp_code 

@@ -14,9 +14,10 @@ committees AS (
 SELECT
     cc.sub_id, -- PRIMARY KEY
     cc.cmte_id,
-    cmte.cmte_nm,
-    cc.amndt_id,
+    cmte.cmte_nm AS cmte_name,
+    cc.amndt_ind,
     cc.report_type,
+    cc.transaction_tp AS transaction_tp_code,
     cc.transaction_type,
     cand.cand_name AS cand_recipient,
     cc.city AS cand_city,
@@ -27,9 +28,9 @@ SELECT
 FROM committee_contributions cc
 INNER JOIN candidates cand ON cc.cand_id = cand.cand_id
 INNER JOIN committees cmte ON cc.cmte_id = cmte.cmte_id
-WHERE cc.amndt_id != 'Termination'
+WHERE cc.amndt_ind != 'Termination'
     AND cc.state IN ('AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 
                 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 
                 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 
                 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 
-                'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC')
+                'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC', 'US')
