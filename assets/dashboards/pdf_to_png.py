@@ -24,7 +24,7 @@ def convert_and_merge(title):
 def main():
 
     titles = ['individual_contributions', 'operating_expenditures', 'committee_contributions']
-
+    
     for title in titles:
         convert_and_merge(title)
 
