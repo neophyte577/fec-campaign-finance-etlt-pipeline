@@ -1,6 +1,7 @@
 from airflow.decorators import dag, task
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+
 from pendulum import datetime, now
 
 datasets = {
@@ -10,19 +11,18 @@ datasets = {
     'congressional_campaigns': 'webl',
     'committee_master': 'cm',
     'pac_summary': 'webk',
-    # 'individual_contributions': 'indiv',
+    'individual_contributions': 'indiv',
     'committee_contributions': 'pas2',
     'committee_transactions': 'oth',
     'operating_expenditures': 'oppexp'
 }
 
-cycles = ['2024']
+cycles = ['2026']
 
 # cycles = ['2026', '2024', '2022', '2020', '2018', '2016', '2014','2012', '2010', '2008', '2006', '2004', '2002', '2000', 
 #           '1998', '1996', '1994', '1992', '1990', '1988', '1986', '1984', '1982', '1980'] 
 
-today = now().at(0, 0, 0) 
-today_date = today.date() 
+today_date = now().at(0, 0, 0).date() 
 run_date = 'today' # in lieu of today_date for now
 extension = '.parquet'
 temp_dir = '/opt/airflow/dags/temp/'

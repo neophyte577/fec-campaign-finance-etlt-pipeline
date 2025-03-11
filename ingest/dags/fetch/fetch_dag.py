@@ -1,13 +1,13 @@
 from airflow.decorators import dag, task
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
-from pendulum import datetime, duration, now
 
 import requests
 import os, gc
 import shutil 
 import zipfile
 import concurrent.futures
+from pendulum import duration, now
 import polars as pl
 import pandas as pd
 
@@ -68,7 +68,14 @@ def ingest():
         input_dir = f'{temp_dir}{name}_{cycle}/in/'
         output_dir = f'{temp_dir}{name}_{cycle}/out/'
         cleaned_data_path = input_dir + 'cleaned_data.txt'
-        output_name = f'{run_date}_{name}_{cycle}{extension}'
+
+        current_year = now().year
+        current_cycle = current_year if current_year % 2 == 0 else current_year + 1
+
+        if int(cycle) < current_cycle:
+            output_name = f'{name}_{cycle}{extension}'
+        else:
+            output_name = f'{run_date}_{name}_{cycle}{extension}'
 
         paths = {
             'input_dir': input_dir,

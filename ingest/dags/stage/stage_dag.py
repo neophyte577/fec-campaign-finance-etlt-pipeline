@@ -1,8 +1,9 @@
-from datetime import datetime
 from airflow.decorators import dag, task
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+
+from pendulum import datetime, now
 
 s3_dir = 'campaign-finance'
 
@@ -31,8 +32,14 @@ def stage():
         cycle = config['cycle']
         run_date = config['run_date']
         extension = config['extension']
-    
-        output_name = f'{run_date}_{name}_{cycle}{extension}'
+
+        current_year = now().year
+        current_cycle = current_year if current_year % 2 == 0 else current_year + 1
+
+        if int(cycle) < current_cycle:
+            output_name = f'{name}_{cycle}{extension}'
+        else:
+            output_name = f'{run_date}_{name}_{cycle}{extension}'
 
         paths = {
             'name': name,
@@ -74,7 +81,7 @@ def stage():
 
             s3_hook.load_file(
                 filename=file_path, 
-                key=f'{s3_dir}/{output_name}',  
+                key=f'{s3_dir}/{cycle}/{output_name}',  
                 bucket_name=bucket_name, 
                 replace=True
             )

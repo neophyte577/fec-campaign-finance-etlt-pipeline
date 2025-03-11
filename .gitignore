@@ -7,3 +7,4 @@ credentials
 .user.yml
 snowflake_connection.py
 metabase.db/
+temp/
