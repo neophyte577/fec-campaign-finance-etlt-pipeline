@@ -57,10 +57,13 @@ def stage():
     @task
     def test_s3_connection():
         try:
+            bucket_name = 'fec-data-staging-bucket'
             s3_hook = S3Hook()
-            buckets = s3_hook.get_conn().list_buckets()['Buckets']
-            bucket_name = buckets[0]['Name']  
-            print(f"Successfully connected to S3. Found bucket: {bucket_name}") 
+
+            if s3_hook.check_for_bucket(bucket_name):
+                print(f"Successfully connected to S3. Found bucket: {bucket_name}")
+            else:
+                raise ValueError(f"Bucket {bucket_name} not found or not accessible.")
         except Exception as e:
             print(f"Error connecting to S3: {e}")
             raise
@@ -74,8 +77,7 @@ def stage():
 
         try:
             s3_hook = S3Hook()
-            buckets = s3_hook.get_conn().list_buckets()['Buckets']
-            bucket_name = buckets[0]['Name']  
+            bucket_name = 'fec-data-staging-bucket'
 
             file_path = f'/opt/airflow/dags/temp/{name}_{cycle}/out/{output_name}' 
 

@@ -162,33 +162,50 @@ def ingest():
         file_size = os.path.getsize(raw_data_path)
         file_size_mb = file_size / (1024 * 1024)
 
-        # condition approach on MG_THRESHOLD size to parse by row
-        if file_size_mb < MB_THRESHOLD: # all at once
-            with open(raw_data_path, 'r', encoding='utf-8') as file:
-                cleaned = file.read().replace(',|', '|').replace('"','').replace("'","")
+        if file_size_mb < MB_THRESHOLD:  # Read all at once
+            try:
+                with open(raw_data_path, 'r', encoding='utf-8') as file:
+                    cleaned = file.read().replace(',|', '|').replace('"', '').replace("'", "")
+            except UnicodeDecodeError:
+                with open(raw_data_path, 'rb') as file:
+                    raw = file.read()
+                    cleaned = raw.decode('utf-8', errors='replace').replace('�', '')
+                    cleaned = cleaned.replace(',|', '|').replace('"', '').replace("'", "")
             with open(cleaned_data_path, 'w', encoding='utf-8') as cleaned_data:
                 cleaned_data.write(cleaned)
 
-        else: # in chunks, concurrently threaded
+        else:  # Read in chunks using threading
             chunk_size = 100000
 
             def clean_line(line):
                 return line.replace(',|', '|').replace('"', '').replace("'", "")
-            
+
             def process_chunk(chunk_lines, cleaned_data_path):
                 with open(cleaned_data_path, 'a', encoding='utf-8') as cleaned_data:
                     for cleaned_line in map(clean_line, chunk_lines):
                         cleaned_data.write(cleaned_line + '\n')
 
-            with open(raw_data_path, 'r', encoding='utf-8') as file:
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    while True:
-                        lines = file.readlines(chunk_size)
-                        if not lines:
-                            break
-                        executor.submit(process_chunk, lines, cleaned_data_path)
+            try:
+                with open(raw_data_path, 'r', encoding='utf-8') as file:
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        while True:
+                            lines = file.readlines(chunk_size)
+                            if not lines:
+                                break
+                            executor.submit(process_chunk, lines, cleaned_data_path)
+            except UnicodeDecodeError:
+                with open(raw_data_path, 'rb') as file:
+                    raw = file.read()
+                    text = raw.decode('utf-8', errors='replace').replace('�', '')
+                    lines = text.splitlines()
+
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        for i in range(0, len(lines), chunk_size):
+                            chunk = lines[i:i + chunk_size]
+                            executor.submit(process_chunk, chunk, cleaned_data_path)
 
         gc.collect()
+
     
     @task
     def write(paths):
