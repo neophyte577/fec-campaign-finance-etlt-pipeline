@@ -253,7 +253,7 @@ services:
     environment:
       DBT_PROFILES_DIR: /opt/airflow/dbt 
     ports:
-      - "8000:8000"
+      - "8000:8000" # dbt docs serve --port 8000 --no-browser --host 0.0.0.0 --project-dir /opt/airflow/dbt/transformations --target-path /opt/airflow/dbt/transformations/target
 
 volumes:
   postgres-db-volume:

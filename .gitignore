@@ -8,3 +8,7 @@ credentials
 snowflake_connection.py
 metabase.db/
 temp/
+*.zip
+transform/backup/*
+docs_2024/*
+.env

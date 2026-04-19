@@ -162,7 +162,7 @@ def ingest():
         file_size = os.path.getsize(raw_data_path)
         file_size_mb = file_size / (1024 * 1024)
 
-        if file_size_mb < MB_THRESHOLD:  # Read all at once
+        if file_size_mb < MB_THRESHOLD:  # read all at once
             try:
                 with open(raw_data_path, 'r', encoding='utf-8') as file:
                     cleaned = file.read().replace(',|', '|').replace('"', '').replace("'", "")
@@ -174,7 +174,7 @@ def ingest():
             with open(cleaned_data_path, 'w', encoding='utf-8') as cleaned_data:
                 cleaned_data.write(cleaned)
 
-        else:  # Read in chunks using threading
+        else:  # read in chunks using threading
             chunk_size = 100000
 
             def clean_line(line):
@@ -255,7 +255,7 @@ def ingest():
             batches = reader.next_batches(100000)
             while batches:
                 df = pl.concat(batches)
-                df = convert_date_columns(df, date_columns)  # Ensure conversion here
+                df = convert_date_columns(df, date_columns)  # ensure conversion here
                 df.write_parquet(os.path.join(output_dir, output_name), append=True)
                 batches = reader.next_batches(100000)
                 gc.collect()
